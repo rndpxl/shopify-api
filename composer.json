@@ -1,0 +1,13 @@
+{
+    "name": "rndpxl/shopify-api",
+    "description": "Interface for Shopify's RESTful API",
+    "autoload": {
+        "psr-4": {
+            "rndpxl\\shopifyAPI\\": "src"
+        }
+    },
+    "require": {
+        "guzzlehttp/guzzle": "7.2",
+        "ext-json": "*"
+    }
+}
