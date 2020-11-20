@@ -291,7 +291,7 @@ class API
 
 	public function post(string $url, $data = [])
 	{
-		return $this->call('POST', $this->formatURL($url), $data);
+		return $this->call('POST', $this->formatURL($url), [ 'json' => $data ]);
 	}
 
 	public function put(string $url, $data = [])
