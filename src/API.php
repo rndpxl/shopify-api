@@ -101,10 +101,10 @@ class API
 	 * @return mixed
 	 * @throws InvalidDomainException
 	 */
-	private function extractShopifyDomain(string $domain)
+	public static function extractShopifyDomain(string $domain)
 	{
 		$domainMatches = [];
-		preg_match('/\b([a-zA-Z0-9\-\_]+)\.myshopify\.com/', $domain, $domainMatches);
+		preg_match('/^([a-zA-Z0-9\-\_]+)\.myshopify\.com/', $domain, $domainMatches);
 
 		if (count($domainMatches))
 		{
@@ -140,7 +140,7 @@ class API
 
 	public function __construct(string $type, string $domain, string $version, array $settings)
 	{
-		$this->_shopURL = $this->extractShopifyDomain($domain);
+		$this->_shopURL = self::extractShopifyDomain($domain);
 		$this->_apiVersion = $version;
 
 		switch(strtolower($type))
@@ -285,7 +285,7 @@ class API
 		{
 			$additional['query'] = $data;
 		}
-		
+
 		return $this->call('GET', $url, $additional);
 	}
 
@@ -326,10 +326,13 @@ class API
 		return $this;
 	}
 
-
-	public static function verifyRequest()
+	public static function verifyRequest($data = [], $secretKey = '')
 	{
+		$hmac = $data['hmac'];
+		unset($data['hmac']);
+		$qs = http_build_query($data);
 
+		return $hmac === hash_hmac('sha256', $qs, $secretKey);
 	}
 
 
@@ -351,4 +354,33 @@ class API
 		}
 	}
 
+	public static function installURL($shop = '', $apiKey = '', $scope = [], $nonce = '', $accessMode = 'value', $redirect = '')
+	{
+		// https://{shop}.myshopify.com/admin/oauth/authorize?client_id={api_key}&scope={scopes}&redirect_uri={redirect_uri}&state={nonce}&grant_options[]={access_mode}
+		$domain = self::extractShopifyDomain($shop);
+		return 'https://' . $shop . '/admin/oauth/authorize?client_id=' . $apiKey . '&scope=' . implode(',', $scope) . ($redirect ? '&redirect_uri=' . urlencode($redirect) : '') . '&state=' . $nonce . '&grant_options[]=' . $accessMode;
+	}
+
+	public static function getAccessToken($shop = '', $clientID = '', $clientSecret = '', $code = '')
+	{
+		$domain = self::extractShopifyDomain($shop);
+		$client = new Client();
+
+		try
+		{
+			$response = $client->request('POST',
+				'https://' . $shop . '/admin/oauth/access_token',
+				['json' => [
+					'client_id' => $clientID,
+					'client_secret' => $clientSecret,
+					'code' => $code
+				]
+				]);
+		}
+		catch(\Exception $e)
+		{
+			die($e->getMessage());
+		}
+		return json_decode($response->getBody());
+	}
 }

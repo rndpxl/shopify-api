@@ -27,6 +27,9 @@ class APIException extends \Exception {
 
 			case 'message':
 				return $this->_message;
+
+			case 'code':
+				return $this->_code;
 		}
 	}
 }
